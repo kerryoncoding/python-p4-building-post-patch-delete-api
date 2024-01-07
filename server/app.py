@@ -52,21 +52,115 @@ def game_by_id(id):
 
     return response
 
-@app.route('/reviews')
-def reviews():
+# @app.route('/reviews')
+# def reviews():
 
-    reviews = []
-    for review in Review.query.all():
+#     reviews = []
+#     for review in Review.query.all():
+#         review_dict = review.to_dict()
+#         reviews.append(review_dict)
+
+#     response = make_response(
+#         reviews,
+#         200
+#     )
+
+#     return response
+
+
+
+# Handle delete of a review
+# Find the review to delete using the ID.
+# Delete the review from the database.
+# Send a response with the deleted review as JSON to confirm that it was deleted successfully, so the frontend can show the successful deletion to the user.
+@app.route('/reviews/<int:id>', methods = ['GET', 'DELETE', 'PATCH'])
+def review_by_id(id):
+    review = Review.query.filter(Review.id == id).first()
+    if request.method == 'GET':
         review_dict = review.to_dict()
-        reviews.append(review_dict)
+        response = make_response(
+            review_dict,
+            200
+        )
+        return response
+    elif request.method == 'DELETE':
+        db.session.delete(review)
+        db.session.commit()
 
-    response = make_response(
-        reviews,
-        200
-    )
+        response_body = {
+            "delete_successful": True,
+            "message": "Review deleted."
+        }
 
-    return response
+        response = make_response(
+            response_body,
+            200
+        )
+        return response
+    
+    # Handle requests with the PATCH HTTP verb to /reviews/<int:id>.
+    # Find the review to update using the ID.
+    # Access the data in the body of the request.
+    # Use that data to update the review in the database.
+    # Send a response with updated review as JSON.
+    elif request.method == 'PATCH':
+        for attr in request.form:
+            setattr(review, attr, request.form.get(attr))
+        db.session.add(review)
+        db.session.commit()
 
+        review_dict = review.to_dict()
+
+        response = make_response(
+            review_dict,
+            200
+        )
+        return response
+        
+    
+    
+# Handle requests with the POST HTTP verb to /reviews.
+# Access the data in the body of the request.
+# Use that data to create a new review in the database.
+# Send a response with newly created review as JSON.
+@app.route('/reviews', methods=['GET', 'POST'])
+def reviews():
+    if request.method == 'GET':
+        reviews = []
+        for review in Review.query.all():
+            review_dict = review.to_dict()
+            reviews.append(review_dict)
+          
+        response = make_response(
+            reviews,
+            200
+        )
+        return response
+    elif request.method == 'POST':
+        new_review = Review(
+            score=request.form.get("score"),
+            comment=request.form.get("comment"),
+            game_id=request.form.get("game_id"),
+            user_id=request.form.get("user_id"),
+        )
+
+        db.session.add(new_review)
+        db.session.commit()
+        
+        review_dict = new_review.to_dict()
+        
+        response = make_response(
+            review_dict,
+            201
+        )
+        return response
+
+
+
+
+    
+
+    
 @app.route('/users')
 def users():
 
